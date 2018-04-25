@@ -82,6 +82,7 @@ script:
   - echo $CMAKE_OPTIONS
   - export CMAKE_OPTIONS="-DBOOST_ROOT=${BOOST_DIR} -DBUILD_SHARED_LIBS=ON"
   - echo $CMAKE_OPTIONS
+  - ls -al /home/travis/build/iriberri/CDT-plusplus/boost-1.66.0
   - |
     if [[ ${TESTS} == "true" ]]; then
       CMAKE_OPTIONS+=" -DCMAKE_BUILD_TYPE=Debug -DTESTS:BOOL=ON"
@@ -90,5 +91,7 @@ script:
     fi
   - echo $CMAKE_OPTIONS
   - cmake $CMAKE_OPTIONS -G Ninja ..
+  - export CXXFLAGS=-I/home/travis/build/iriberri/CDT-plusplus/boost-1.66.0/include
+  - export LDPATH=-L/home/travis/build/iriberri/CDT-plusplus/boost-1.66.0/lib
   - cmake --build .
 
