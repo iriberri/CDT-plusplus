@@ -23,7 +23,6 @@ env:
    - BOOST_VERSION=1.66.0
   matrix:
     - TESTS=true
-    - TESTS=false
 
 cache:
   apt:
@@ -36,8 +35,6 @@ os:
 
 compiler:
   - gcc
-  - clang
-
 
 install:
   - |
@@ -75,143 +72,16 @@ before_script:
   - mkdir build
   - cd build
 
-# Build matrix
-# Matrix build combos of {linux,osx} x {gcc,clang} x {TESTS=true, TESTS=false} run script
-# Specific includes run their own scripts
-matrix:
-  fast_finish: true
-  include:
-    # Git Check
-    - os: linux
-      compiler: gcc
-      env: TESTS=false GITCHECK=true
-      # Skip unnecessary steps since we aren't compiling
-      before_install:
-      install:
-      before_script:
-      # Overwrite script on matrix jobs
-      script:
-        - |
-          if [[ -n $(git diff --check HEAD^) ]]; then
-            echo "You must remove whitespace before submitting a pull request."
-            echo ""
-            git diff --check HEAD^
-            exit -1
-          fi
-      # Skip after_success
-      after_success:
-    # ClangFormat
-    - os: linux
-      compiler: clang
-      env: TESTS=false CLANGFORMAT=true
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
-          packages:
-            - clang-6.0
-            - clang-format-6.0
-      # Skip unnecessary steps since we aren't compiling
-      before_install:
-      install:
-      before_script:
-      # Overwrite script on matrix jobs
-      script:
-        - |
-          if [[ -n $(git diff -U0 --no-color HEAD^ | /usr/share/clang/clang-format-6.0/clang-format-diff.py -style file) ]]; then
-            echo "Run clang-format before submitting a pull request."
-            echo ""
-            git diff -U0 --no-color HEAD^ | /usr/share/clang/clang-format-6.0/clang-format-diff.py -style file
-            exit -1
-          fi
-      # Skip after_success
-      after_success:
-    # ClangTidy
-    - os: linux
-      compiler: clang
-      env: TESTS=false CLANGTIDY=true
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
-          packages:
-            - clang-6.0
-            - clang-tidy-6.0
-      # Skip unnecessary steps since we aren't compiling
-      before_install:
-      install:
-      before_script:
-      # Overwrite script on matrix jobs
-      script:
-        - git diff -U0 HEAD^ | /usr/lib/llvm-6.0/share/clang/clang-tidy-diff.py > output.txt
-        - |
-          if [[ -n $(grep "warning: " output.txt) ]] || [[ -n $(grep "error: " output.txt) ]]; then
-            echo "You must pass the clang tidy checks before submitting a pull request"
-            echo ""
-            grep --color -E '^|warning: |error: ' output.txt
-            exit -1;
-          else
-            echo -e "\033[1;32m\xE2\x9C\x93 passed:\033[0m $1";
-          fi
-        # Skip after_success
-      after_success:
-    # Valgrind
-    - os: linux
-      compiler: gcc
-      env: TESTS=false VALGRIND=true
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-7
-            - g++-7
-            - ninja-build
-            - libmpfr-dev
-            - libgmp3-dev
-            - libeigen3-dev
-            - libtbb-dev
-            - libcgal-dev
-            - valgrind
-      script:
-        - cmake -DCMAKE_CXX_COMPILER=g++-7 -DVALGRIND=ON -DTESTS:BOOL=OFF -DBOOST_ROOT=${BOOST_DIR} -G Ninja ..
-        - cmake --build .
-        - ctest -T memcheck
-    # Codecov
-    - os: linux
-      compiler: gcc
-      env: TESTS=false CODECOV=true
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-7
-            - g++-7
-            - ninja-build
-            - libmpfr-dev
-            - libgmp3-dev
-            - libeigen3-dev
-            - libtbb-dev
-            - libcgal-dev
-            - lcov
-      script:
-        - cmake -DTESTS:BOOL=ON -DENABLE_COVERAGE=ON -DCMAKE_CXX_COMPILER="g++-7" -DBOOST_ROOT=${BOOST_DIR} -G Ninja ..
-        - cmake --build .
-      after_success:
-        - cd ${TRAVIS_BUILD_DIR}/build
-        - pwd
-        - ctest
-        - cd ${TRAVIS_BUILD_DIR}
-        - lcov --directory . --capture --output-file coverage.info
-        - lcov --remove coverage.info '/usr/*' --output-file coverage.info
-        - lcov --list coverage.info
-        - bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
-
 script:
+  - echo $CXXFLAGS
+  - echo $LDPATH
+  - echo $PATH
+  - echo $BOOST_DIR
   - CMAKE_OPTIONS="-DBOOST_ROOT=${BOOST_DIR} -DBUILD_SHARED_LIBS=ON"
+  - echo CMAKE_OPTIONS
+  - echo $CMAKE_OPTIONS
+  - export CMAKE_OPTIONS="-DBOOST_ROOT=${BOOST_DIR} -DBUILD_SHARED_LIBS=ON"
+  - echo $CMAKE_OPTIONS
   - |
     if [[ ${TESTS} == "true" ]]; then
       CMAKE_OPTIONS+=" -DCMAKE_BUILD_TYPE=Debug -DTESTS:BOOL=ON"
