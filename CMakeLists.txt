@@ -82,6 +82,10 @@ set(EXECUTABLE_NAME "CDT")
 #Boost
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREAD ON)
+message(${BOOST_ROOT})
+set(BOOST_ROOT "${TRAVIS_BUILD_DIR}/boost-1.66.0")
+message(${BOOST_ROOT})
+
 find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIR})
